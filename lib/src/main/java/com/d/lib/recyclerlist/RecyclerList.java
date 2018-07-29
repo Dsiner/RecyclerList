@@ -24,7 +24,7 @@ public class RecyclerList extends ViewGroup {
     private int mWidth, mHeight, mItemHeight;
     private int mWidthMeasureSpec, mHeightMeasureSpec;
 
-    private final float mLoadFactor = 1.75f;
+    private final float mLoadFactor = 0.75f;
     private final int mDuration = 1000;
 
     private Context mContext;
@@ -74,7 +74,6 @@ public class RecyclerList extends ViewGroup {
 
     private void init(Context context) {
         mContext = context;
-
         final ViewConfiguration configuration = ViewConfiguration.get(context);
         mTouchSlop = configuration.getScaledTouchSlop();
         mMinimumVelocity = configuration.getScaledMinimumFlingVelocity();
@@ -152,7 +151,7 @@ public class RecyclerList extends ViewGroup {
         }
 
         if (mAdapter != null) {
-            for (int i = mPositon, totalHeight = 0; i < size && totalHeight < mHeight; i++) {
+            for (int i = mPositon, totalHeight = 0; i < size && totalHeight < mHeight * (1 + mLoadFactor); i++) {
                 View child = getViewForPosition(i);
                 addView(child);
                 measureChild(child);
@@ -243,8 +242,10 @@ public class RecyclerList extends ViewGroup {
                     final int initialVelocity = (int) velocityTracker.getYVelocity(mActivePointerId);
                     boolean flingVelocity = Math.abs(initialVelocity) > mMinimumVelocity;
                     int initialY = initialVelocity < 0 ? Integer.MAX_VALUE : 0;
-                    mScroller.fling(0, getScrollY(), 0, -initialVelocity,
-                            0, 0, 0, mAdapter != null ? 128 * mSize - mHeight : Integer.MAX_VALUE);
+                    if (flingVelocity) {
+                        mScroller.fling(0, getScrollY(), 0, -initialVelocity,
+                                0, 0, 0, Integer.MAX_VALUE);
+                    }
                     return true;
                 }
                 break;
@@ -265,16 +266,17 @@ public class RecyclerList extends ViewGroup {
         super.onScrollChanged(l, t, oldl, oldt);
         Log.d(TAG, "dsiner onScrollChanged: ChildCount: " + getChildCount()
                 + " left: " + l + " top: " + t + " oldl: " + oldl + " oldt: " + oldt);
-        mBlockLayoutRequests = true;
         if (getChildCount() <= 0) {
             return;
         }
-        fillTop(t);
-        fillDown(t);
+        mBlockLayoutRequests = true;
+        boolean down = t - oldt > 0;
+        fillTop(t, down);
+        fillDown(t, down);
         isBottom(mTouchSlop);
     }
 
-    private void fillTop(int scrollY) {
+    private void fillTop(int scrollY, boolean down) {
         if (getChildCount() <= 0) {
             return;
         }
@@ -282,12 +284,12 @@ public class RecyclerList extends ViewGroup {
         CommonHolder holderFirst = (CommonHolder) first.getTag();
         mPositon = holderFirst.getPosition();
         mOffset = first.getTop() - scrollY;
-        if (first.getBottom() - scrollY < 0) {
+        if (down && first.getBottom() - scrollY < -mHeight * mLoadFactor) {
             mPositon += 1;
             mOffset = first.getBottom() - scrollY;
             detachViewFromParent(first);
             mRecyclerPool.putRecycledView(holderFirst);
-        } else if (first.getTop() - scrollY >= 0) {
+        } else if (!down && first.getTop() - scrollY >= -mHeight * mLoadFactor) {
             mPositon -= 1;
             if (mPositon < 0) {
                 mPositon = 0;
@@ -310,16 +312,16 @@ public class RecyclerList extends ViewGroup {
         }
     }
 
-    private void fillDown(int scrollY) {
+    private void fillDown(int scrollY, boolean down) {
         if (getChildCount() <= 0) {
             return;
         }
         View last = getChildAt(getChildCount() - 1);
         CommonHolder holderLast = (CommonHolder) last.getTag();
-        if (last.getTop() - scrollY - mHeight > mTouchSlop) {
+        if (!down && last.getTop() - mHeight - scrollY > mHeight * mLoadFactor) {
             detachViewFromParent(last);
             mRecyclerPool.putRecycledView(holderLast);
-        } else if (last.getBottom() - scrollY - mHeight <= 0) {
+        } else if (down && last.getBottom() - mHeight - scrollY <= mHeight * mLoadFactor) {
             int position = holderLast.getPosition() + 1;
             if (position > mSize - 1) {
                 return;

@@ -25,7 +25,7 @@ public class RecycledViewPool {
     private SparseIntArray mMaxScrap = new SparseIntArray();
     private int mAttachCount = 0;
 
-    private static final int DEFAULT_MAX_SCRAP = 7;
+    private static final int DEFAULT_MAX_SCRAP = 5;
 
     public void clear() {
         mScrap.clear();
