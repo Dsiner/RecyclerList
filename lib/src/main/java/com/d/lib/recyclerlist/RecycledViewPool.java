@@ -13,7 +13,7 @@ import java.util.ArrayList;
  * RecycledViewPool lets you share Views between multiple RecyclerViews.
  * <p>
  * If you want to recycle views across RecyclerViews, create an instance of RecycledViewPool
- * and use {@link RecyclerView#setRecycledViewPool(RecycledViewPool)}.
+ * and use {@link RecyclerList#setRecycledViewPool(RecycledViewPool)}.
  * <p>
  * RecyclerView automatically creates a pool for itself if you don't provide one.
  */

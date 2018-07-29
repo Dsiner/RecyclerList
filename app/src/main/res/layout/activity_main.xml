@@ -8,11 +8,11 @@
         android:id="@+id/btn_notify"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="notify" />
+        android:text="notify"
+        android:visibility="gone" />
 
     <com.d.lib.recyclerlist.RecyclerList
         android:id="@+id/list"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:background="@color/colorAccent" />
+        android:layout_height="match_parent" />
 </LinearLayout>

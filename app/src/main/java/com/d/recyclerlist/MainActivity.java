@@ -6,6 +6,7 @@ import android.support.v7.app.AppCompatActivity;
 import android.view.View;
 
 import com.d.lib.recyclerlist.RecyclerList;
+import com.d.lib.recyclerlist.adapter.MultiItemTypeSupport;
 import com.d.recyclerlist.adapter.Adapter;
 
 import java.util.ArrayList;
@@ -33,8 +34,36 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     }
 
     private void init() {
-        adapter = new Adapter(this, getDatas(200), R.layout.adapter_item);
+        adapter = getSimpleAdapter();
         list.setAdapter(adapter);
+    }
+
+    private Adapter getSimpleAdapter() {
+        return new Adapter(this, getDatas(200), R.layout.adapter_item_0);
+    }
+
+    private Adapter getMultiAdapter() {
+        return new Adapter(this, getDatas(200), new MultiItemTypeSupport<String>() {
+            @Override
+            public int getLayoutId(int position, String s) {
+                switch (getItemViewType(position, s)) {
+                    case 1:
+                        return R.layout.adapter_item_1;
+                    default:
+                        return R.layout.adapter_item_0;
+                }
+            }
+
+            @Override
+            public int getViewTypeCount() {
+                return 2;
+            }
+
+            @Override
+            public int getItemViewType(int position, String s) {
+                return position % 2;
+            }
+        });
     }
 
     private void notifyAdapter() {
@@ -50,5 +79,4 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         }
         return datas;
     }
-
 }

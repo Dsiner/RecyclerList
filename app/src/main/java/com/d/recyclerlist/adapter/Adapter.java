@@ -6,6 +6,7 @@ import android.widget.Toast;
 
 import com.d.lib.recyclerlist.adapter.CommonAdapter;
 import com.d.lib.recyclerlist.adapter.CommonHolder;
+import com.d.lib.recyclerlist.adapter.MultiItemTypeSupport;
 import com.d.recyclerlist.R;
 
 import java.util.List;
@@ -18,6 +19,10 @@ public class Adapter extends CommonAdapter<String> {
 
     public Adapter(Context context, List<String> datas, int layoutId) {
         super(context, datas, layoutId);
+    }
+
+    public Adapter(Context context, List<String> datas, MultiItemTypeSupport<String> multiItemTypeSupport) {
+        super(context, datas, multiItemTypeSupport);
     }
 
     @Override

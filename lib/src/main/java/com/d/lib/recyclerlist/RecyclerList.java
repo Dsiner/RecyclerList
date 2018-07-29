@@ -1,6 +1,7 @@
 package com.d.lib.recyclerlist;
 
 import android.content.Context;
+import android.support.annotation.NonNull;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.view.MotionEvent;
@@ -38,6 +39,7 @@ public class RecyclerList extends ViewGroup {
 
     private int mTopBorder, mBottomBorder;
     private int mPositon, mOffset;
+    private int mSize;
     private boolean mBlockLayoutRequests;
 
     private int mTouchSlop;
@@ -144,7 +146,7 @@ public class RecyclerList extends ViewGroup {
         detachAllViewsFromParent();
 
         final int recyclers = mRecyclerPool.size();
-        final int size = mAdapter != null ? mAdapter.getCount() : 0;
+        final int size = mAdapter != null ? mSize : 0;
         if (size <= 0) {
             mRecyclerPool.clear();
         }
@@ -242,7 +244,7 @@ public class RecyclerList extends ViewGroup {
                     boolean flingVelocity = Math.abs(initialVelocity) > mMinimumVelocity;
                     int initialY = initialVelocity < 0 ? Integer.MAX_VALUE : 0;
                     mScroller.fling(0, getScrollY(), 0, -initialVelocity,
-                            0, 0, 0, mAdapter != null ? 128 * mAdapter.getCount() - mHeight : Integer.MAX_VALUE);
+                            0, 0, 0, mAdapter != null ? 128 * mSize - mHeight : Integer.MAX_VALUE);
                     return true;
                 }
                 break;
@@ -319,7 +321,7 @@ public class RecyclerList extends ViewGroup {
             mRecyclerPool.putRecycledView(holderLast);
         } else if (last.getBottom() - scrollY - mHeight <= 0) {
             int position = holderLast.getPosition() + 1;
-            if (position > mAdapter.getCount() - 1) {
+            if (position > mSize - 1) {
                 return;
             }
             View child = getViewForPosition(position);
@@ -339,7 +341,7 @@ public class RecyclerList extends ViewGroup {
     }
 
     public void smoothScrollTo(int position, int offset) {
-        if (position < 0 || position > (mAdapter != null ? mAdapter.getCount() - 1 : 0)) {
+        if (position < 0 || position > (mAdapter != null ? mSize - 1 : 0)) {
             return;
         }
         int dstY = mItemHeight * position + offset;
@@ -403,7 +405,7 @@ public class RecyclerList extends ViewGroup {
         }
         View last = getChildAt(getChildCount() - 1);
         CommonHolder holderLast = (CommonHolder) last.getTag();
-        if (holderLast.getPosition() >= mAdapter.getCount() - 1) {
+        if (holderLast.getPosition() >= mSize - 1) {
             int bottomY = last.getBottom();
             if (getScrollY() + offset >= bottomY - mHeight) {
                 mScroller.setFinalY(bottomY - mHeight);
@@ -419,8 +421,16 @@ public class RecyclerList extends ViewGroup {
         if (!mScroller.isFinished()) {
             mScroller.forceFinished(true);
         }
-        scrollTo(0, 0);
+        mSize = mAdapter.getCount();
+        mBlockLayoutRequests = false;
+        mPositon = 0;
+        mOffset = 0;
         requestLayout();
+        scrollTo(0, 0);
+    }
+
+    public void setRecycledViewPool(@NonNull RecycledViewPool pool) {
+        mRecyclerPool = pool;
     }
 
     public void setAdapter(CommonAdapter adapter) {
