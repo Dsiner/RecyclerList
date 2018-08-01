@@ -13,6 +13,10 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class MainActivity extends AppCompatActivity implements View.OnClickListener {
+    private final static int TYPE_SIMPLE = 0;
+    private final static int TYPE_MULTIPLE = 1;
+
+    private int type = TYPE_SIMPLE;
     private RecyclerList list;
     private Adapter adapter;
 
@@ -34,7 +38,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     }
 
     private void init() {
-        adapter = getSimpleAdapter();
+        adapter = type == TYPE_MULTIPLE ? getMultiAdapter() : getSimpleAdapter();
         list.setAdapter(adapter);
     }
 

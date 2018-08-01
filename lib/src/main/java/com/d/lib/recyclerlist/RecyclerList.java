@@ -24,7 +24,7 @@ public class RecyclerList extends ViewGroup {
     private int mWidth, mHeight, mItemHeight;
     private int mWidthMeasureSpec, mHeightMeasureSpec;
 
-    private final float mLoadFactor = 0.75f;
+    private final float mLoadFactor = 0.36f;
     private final int mDuration = 1000;
 
     private Context mContext;
@@ -77,7 +77,7 @@ public class RecyclerList extends ViewGroup {
         final ViewConfiguration configuration = ViewConfiguration.get(context);
         mTouchSlop = configuration.getScaledTouchSlop();
         mMinimumVelocity = configuration.getScaledMinimumFlingVelocity();
-        mMaximumVelocity = configuration.getScaledMaximumFlingVelocity();
+        mMaximumVelocity = (int) (configuration.getScaledMaximumFlingVelocity() * 0.36f);
         mOverscrollDistance = configuration.getScaledOverscrollDistance();
         mOverflingDistance = configuration.getScaledOverflingDistance();
 
