@@ -5,6 +5,11 @@
 
 > Handwritten recyclable list, like `ListView`, `RecyclerView`. For testing only.
 
+## Demo
+<p>
+   <img src="https://github.com/Dsiner/Resouce/blob/master/lib/RecyclerList/recyclerlist.gif" width="320" alt="Screenshot"/>
+</p>
+
 ## Support list
 - [x] Support recycling
 - [x] Support simple or multiple adapter
@@ -12,8 +17,8 @@
 
 ### Use
 ```java
-    list = (RecyclerList) findViewById(R.id.list);
-    adapter = new Adapter(this, getDatas(200), R.layout.adapter_item_0);
+    RecyclerList list = (RecyclerList) findViewById(R.id.list);
+    Adapter adapter = new Adapter(this, getDatas(200), R.layout.adapter_item);
     list.setAdapter(adapter)
 ```
 
