@@ -195,10 +195,10 @@ public class RecyclerList extends ViewGroup {
     @Override
     public boolean onInterceptTouchEvent(MotionEvent ev) {
         if (ev.getAction() == MotionEvent.ACTION_MOVE) {
-            final float eX = ev.getRawX();
-            final float eY = ev.getRawY();
+            final float eX = ev.getX();
+            final float eY = ev.getY();
             // Intercept child event when horizontal ACTION_MOVE value is greater than TouchSlop
-            if (Math.abs(eY - mDy) > mTouchSlop && Math.abs(eY - mDy) > Math.abs(eX - mDx)) {
+            if (Math.abs(eY - mDy) > mTouchSlop || Math.abs(eX - mDx) > mTouchSlop) {
                 return true;
             }
         }
@@ -217,10 +217,11 @@ public class RecyclerList extends ViewGroup {
                     mActivePointerId = event.getPointerId(0);
                     initOrResetVelocityTracker();
                     mVelocityTracker.addMovement(event);
+                    mLastY = eY;
                     mIsMoveValid = true;
                 }
                 if (mIsMoveValid) {
-                    int offset = (int) (mLastY - eY);
+                    final int offset = (int) (mLastY - eY);
                     mLastY = eY;
                     if (getScrollY() + offset <= 0) {
                         scrollTo(0, 0);
@@ -240,12 +241,13 @@ public class RecyclerList extends ViewGroup {
                     final VelocityTracker velocityTracker = mVelocityTracker;
                     velocityTracker.computeCurrentVelocity(1000, mMaximumVelocity);
                     final int initialVelocity = (int) velocityTracker.getYVelocity(mActivePointerId);
-                    boolean flingVelocity = Math.abs(initialVelocity) > mMinimumVelocity;
-                    int initialY = initialVelocity < 0 ? Integer.MAX_VALUE : 0;
+                    final boolean flingVelocity = Math.abs(initialVelocity) > mMinimumVelocity;
+                    final int initialY = initialVelocity < 0 ? Integer.MAX_VALUE : 0;
                     if (flingVelocity) {
                         mScroller.fling(0, getScrollY(), 0, -initialVelocity,
                                 0, 0, 0, Integer.MAX_VALUE);
                     }
+                    recycleVelocityTracker();
                     return true;
                 }
                 break;
@@ -273,7 +275,9 @@ public class RecyclerList extends ViewGroup {
         boolean down = t - oldt > 0;
         fillTop(t, down);
         fillDown(t, down);
-        isBottom(mTouchSlop);
+        if (!mIsMoveValid) {
+            isBottom(mTouchSlop);
+        }
     }
 
     private void fillTop(int scrollY, boolean down) {
@@ -284,12 +288,7 @@ public class RecyclerList extends ViewGroup {
         CommonHolder holderFirst = (CommonHolder) first.getTag();
         mPositon = holderFirst.getPosition();
         mOffset = first.getTop() - scrollY;
-        if (down && first.getBottom() - scrollY < -mHeight * mLoadFactor) {
-            mPositon += 1;
-            mOffset = first.getBottom() - scrollY;
-            detachViewFromParent(first);
-            mRecyclerPool.putRecycledView(holderFirst);
-        } else if (!down && first.getTop() - scrollY >= -mHeight * mLoadFactor) {
+        if (!down && first.getTop() - scrollY >= -mHeight * mLoadFactor) {
             mPositon -= 1;
             if (mPositon < 0) {
                 mPositon = 0;
@@ -309,6 +308,11 @@ public class RecyclerList extends ViewGroup {
             final int childTop = first.getTop() - height;
             child.layout(0, childTop, width, childTop + height);
             mOffset -= height;
+        } else if (down && first.getBottom() - scrollY < -mHeight * mLoadFactor) {
+            mPositon += 1;
+            mOffset = first.getBottom() - scrollY;
+            detachViewFromParent(first);
+            mRecyclerPool.putRecycledView(holderFirst);
         }
     }
 
@@ -318,10 +322,7 @@ public class RecyclerList extends ViewGroup {
         }
         View last = getChildAt(getChildCount() - 1);
         CommonHolder holderLast = (CommonHolder) last.getTag();
-        if (!down && last.getTop() - mHeight - scrollY > mHeight * mLoadFactor) {
-            detachViewFromParent(last);
-            mRecyclerPool.putRecycledView(holderLast);
-        } else if (down && last.getBottom() - mHeight - scrollY <= mHeight * mLoadFactor) {
+        if (down && last.getBottom() - mHeight - scrollY <= mHeight * mLoadFactor) {
             int position = holderLast.getPosition() + 1;
             if (position > mSize - 1) {
                 return;
@@ -339,6 +340,9 @@ public class RecyclerList extends ViewGroup {
             final int height = child.getMeasuredHeight();
             final int childTop = last.getBottom();
             child.layout(0, childTop, width, childTop + height);
+        } else if (!down && last.getTop() - mHeight - scrollY > mHeight * mLoadFactor) {
+            detachViewFromParent(last);
+            mRecyclerPool.putRecycledView(holderLast);
         }
     }
 
@@ -350,17 +354,6 @@ public class RecyclerList extends ViewGroup {
         int dValue = dstY - getScrollY();
         mScroller.startScroll(0, getScrollY(), 0, dValue, mDuration);
         invalidate();
-    }
-
-    @Deprecated
-    private void scrollListItemsBy(int offset) {
-        offsetTopAndBottom(offset);
-        removeViewAt(0);
-        removeViewsInLayout(0, 1);
-        removeViewInLayout(getChildAt(0));
-        detachViewFromParent(0);
-        detachViewFromParent(getChildAt(0));
-        removeDetachedView(getChildAt(0), false);
     }
 
     private View getViewForPosition(int position) {
@@ -402,21 +395,31 @@ public class RecyclerList extends ViewGroup {
     }
 
     public boolean isBottom(int offset) {
-        if (mAdapter == null || getChildCount() <= 0) {
+        int bottomY = getBottomBorder();
+        if (bottomY < 0) {
             return false;
+        }
+        if (getScrollY() + offset >= bottomY - mHeight) {
+            if (!mIsMoveValid) {
+                mScroller.setFinalY(bottomY - mHeight);
+                mScroller.abortAnimation();
+            }
+            scrollTo(0, bottomY - mHeight);
+            return true;
+        }
+        return false;
+    }
+
+    public int getBottomBorder() {
+        if (mAdapter == null || getChildCount() <= 0) {
+            return -1;
         }
         View last = getChildAt(getChildCount() - 1);
         CommonHolder holderLast = (CommonHolder) last.getTag();
         if (holderLast.getPosition() >= mSize - 1) {
-            int bottomY = last.getBottom();
-            if (getScrollY() + offset >= bottomY - mHeight) {
-                mScroller.setFinalY(bottomY - mHeight);
-                mScroller.abortAnimation();
-                scrollTo(0, bottomY - mHeight);
-                return true;
-            }
+            return last.getBottom();
         }
-        return false;
+        return -1;
     }
 
     private void reset() {
